@@ -72,7 +72,12 @@
       <div class="hint">Pricing context for this trade: IV, days to expiry and the risk-free rate drive the theoretical prices and Greeks; IV Rank, earnings and account size drive the coach.</div>
       <div class="solver">
         <span class="lv-k">Live price</span>
-        <div class="field"><label for="avKey">Alpha Vantage API key</label><input id="avKey" class="mono" type="text" placeholder="free key from alphavantage.co"></div>
+        <div class="field"><label for="avKey">Alpha Vantage API key</label>
+          <div style="display:flex;gap:4px">
+            <input id="avKey" class="mono" type="password" autocomplete="off" placeholder="free key from alphavantage.co">
+            <button class="btn small ghost" id="avKeyToggle" type="button" title="Show/hide key" aria-label="Show or hide the API key">👁</button>
+          </div>
+        </div>
         <button class="btn small primary" id="avGo" type="button">Get live price</button>
         <span class="hint" style="flex-basis:auto" id="avOut">Fetches the latest close for the ticker above and fills the Spot field. Free tier: 25 requests/day. The key stays in this browser and is sent only to Alpha Vantage.</span>
       </div>

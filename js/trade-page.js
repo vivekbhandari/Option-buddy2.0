@@ -245,6 +245,7 @@
   // ---------- live price (Alpha Vantage) ----------
   $('avKey').value = SB.getAVKey();
   $('avKey').addEventListener('input', e => SB.setAVKey(e.target.value.trim()));
+  $('avKeyToggle').addEventListener('click', () => { $('avKey').type = $('avKey').type === 'password' ? 'text' : 'password'; });
   $('avGo').addEventListener('click', async () => {
     const key = $('avKey').value.trim();
     const tk = (state.ticker || '').trim();
