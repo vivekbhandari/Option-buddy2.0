@@ -215,6 +215,29 @@ window.SB = (function () {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
+  // ---------- live price (Alpha Vantage, optional — user supplies their own free key) ----------
+  const AV_KEY_STORAGE = 'spreadstack.avkey';
+  function getAVKey() { try { return localStorage.getItem(AV_KEY_STORAGE) || ''; } catch (e) { return ''; } }
+  function setAVKey(key) { try { if (key) localStorage.setItem(AV_KEY_STORAGE, key); else localStorage.removeItem(AV_KEY_STORAGE); } catch (e) { /* ignore */ } }
+  async function fetchAlphaVantageQuote(ticker, key) {
+    const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${encodeURIComponent(ticker)}&apikey=${encodeURIComponent(key)}`;
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), 8000);
+    try {
+      const res = await fetch(url, { signal: ctl.signal });
+      if (!res.ok) return { error: `Alpha Vantage returned an error (HTTP ${res.status}).` };
+      const data = await res.json();
+      if (data['Note']) return { error: 'Rate limited by Alpha Vantage — the free tier allows 25 requests/day. Try again later.' };
+      if (data['Information']) return { error: data['Information'] };
+      const quote = data['Global Quote'];
+      const price = quote && Number(quote['05. price']);
+      if (!(price > 0)) return { error: 'No quote returned — check the ticker symbol and API key.' };
+      return { price, date: quote['07. latest trading day'], changePct: quote['10. change percent'] };
+    } catch (e) {
+      return { error: e.name === 'AbortError' ? 'Request to Alpha Vantage timed out.' : 'Network error reaching Alpha Vantage.' };
+    } finally { clearTimeout(timer); }
+  }
+
   return {
     bs, solveIV, roundStrike, findStrikeByDelta,
     CATS, STRATS, INTENTS, stratById, L,
@@ -222,5 +245,6 @@ window.SB = (function () {
     esc, fmtUSD, fmtPx, fmtK, ticks, today, EXIT_REASONS, daysBetween,
     legPayoff, posPayoffFor, posTheoFor, posMaxProfitFor, posMaxLossFor, realized, posLabel, allPositions,
     csvText, downloadCSV,
+    getAVKey, setAVKey, fetchAlphaVantageQuote,
   };
 })();

@@ -71,6 +71,12 @@
       <div class="field"><label for="acct">Account size $</label><input id="acct" class="mono" type="number" step="100" placeholder="optional"></div>
       <div class="hint">Pricing context for this trade: IV, days to expiry and the risk-free rate drive the theoretical prices and Greeks; IV Rank, earnings and account size drive the coach.</div>
       <div class="solver">
+        <span class="lv-k">Live price</span>
+        <div class="field"><label for="avKey">Alpha Vantage API key</label><input id="avKey" class="mono" type="text" placeholder="free key from alphavantage.co"></div>
+        <button class="btn small primary" id="avGo" type="button">Get live price</button>
+        <span class="hint" style="flex-basis:auto" id="avOut">Fetches the latest close for the ticker above and fills the Spot field. Free tier: 25 requests/day. The key stays in this browser and is sent only to Alpha Vantage.</span>
+      </div>
+      <div class="solver">
         <span class="lv-k">Solve IV from a quote</span>
         <div class="field"><label for="svK">Strike</label><input id="svK" class="mono" type="number" step="0.5"></div>
         <div class="field"><label for="svT">Type</label><select id="svT"><option value="call">Call</option><option value="put">Put</option></select></div>

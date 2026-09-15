@@ -242,6 +242,24 @@
     }
   }
 
+  // ---------- live price (Alpha Vantage) ----------
+  $('avKey').value = SB.getAVKey();
+  $('avKey').addEventListener('input', e => SB.setAVKey(e.target.value.trim()));
+  $('avGo').addEventListener('click', async () => {
+    const key = $('avKey').value.trim();
+    const tk = (state.ticker || '').trim();
+    if (!key) { $('avOut').textContent = 'Enter an Alpha Vantage API key first — get a free one at alphavantage.co/support/#api-key.'; return; }
+    if (!tk) { $('avOut').textContent = 'Enter a ticker first.'; return; }
+    $('avGo').disabled = true; $('avOut').textContent = 'Fetching…';
+    const q = await SB.fetchAlphaVantageQuote(tk, key);
+    $('avGo').disabled = false;
+    if (q.error) { $('avOut').textContent = q.error; return; }
+    state.spot = q.price; $('spot').value = q.price;
+    $('avOut').textContent = `${tk} last close ${fmtPx(q.price)}${q.date ? ' on ' + q.date : ''}${q.changePct ? ' (' + q.changePct + ')' : ''}.`;
+    if (!$('svK').value) $('svK').value = roundStrike(q.price, q.price);
+    update(false); refreshAllGreeks();
+  });
+
   // ---------- IV solver ----------
   $('svGo').addEventListener('click', () => {
     const c = ctx(); const K = Number($('svK').value), P = Number($('svP').value), type = $('svT').value;
