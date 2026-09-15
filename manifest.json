@@ -1,0 +1,13 @@
+{
+  "name": "OptionsBuddy — Spread Stack",
+  "short_name": "Spread Stack",
+  "description": "Build options spreads, price them with Black-Scholes, and see the combined P/L at expiry with coaching and a payoff chart.",
+  "start_url": "index.html",
+  "scope": ".",
+  "display": "standalone",
+  "background_color": "#f4f4f1",
+  "theme_color": "#1f66bf",
+  "icons": [
+    { "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
