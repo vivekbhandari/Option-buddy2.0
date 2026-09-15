@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Trade Builder · OptionsBuddy</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Build options spreads, price them with Black-Scholes, and see the combined P/L at expiry with coaching and a payoff chart.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css">
+<link rel="stylesheet" href="css/app.css">
+<script>(function(){try{var t=localStorage.getItem('ob-theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg ob-navbar sticky-top">
+  <div class="container-xxl">
+    <a class="navbar-brand" href="index.html"><span class="ob">OptionsBuddy</span>Spread Stack</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMain" aria-controls="navMain" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navMain">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        <li class="nav-item"><a class="nav-link active" aria-current="page" href="index.html">Trade Builder</a></li>
+        <li class="nav-item"><a class="nav-link" href="dashboard.html">Dashboard</a></li>
+        <li class="nav-item"><a class="nav-link" href="learn.html">Learn</a></li>
+      </ul>
+      <button class="btn btn-sm ghost btn small" id="themeToggle" type="button" title="Cycle theme">🖥 Auto</button>
+      <button class="btn btn-sm ghost btn small ms-2" id="exportBtn" type="button">Export CSV</button>
+    </div>
+  </div>
+</nav>
+
+<div class="page-wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>Spread Stack</h1>
+      <p>Pick strategies from the library, stack them on one underlying, and see each spread and the combined book at expiry — with Greeks and coaching.</p>
+    </div>
+    <div class="trade-head">
+      <div class="field"><label for="ticker">Ticker</label><input id="ticker" class="tick mono" value="PANW"></div>
+      <div class="field"><label for="spot">Spot (optional)</label><input id="spot" class="num mono" type="number" step="0.01" placeholder="—"></div>
+      <div class="field"><label for="mult">Multiplier</label><input id="mult" class="num mono" type="number" step="1" value="100"></div>
+      <button class="btn ghost" id="resetBtn" type="button">Reset this trade</button>
+    </div>
+  </header>
+
+  <nav class="trades" aria-label="Saved trades">
+    <div class="tabs" id="tabs"></div>
+    <div class="tabs-actions">
+      <button class="btn small ghost" id="dupTrade" type="button" title="Copy this trade as a new one">Duplicate</button>
+      <button class="btn small ghost" id="delTrade" type="button" title="Remove this trade">Remove</button>
+      <button class="btn primary small" id="newTrade" type="button">+ New trade</button>
+    </div>
+  </nav>
+
+  <section class="panel">
+    <div class="ctx">
+      <div class="field"><label for="iv">Implied vol %</label><input id="iv" class="mono" type="number" step="1" min="1" value="30"></div>
+      <div class="field"><label for="dte">Days to expiry</label><input id="dte" class="mono" type="number" step="1" min="0" value="45"></div>
+      <div class="field"><label for="ivr">IV Rank 0–100</label><input id="ivr" class="mono" type="number" step="1" min="0" max="100" value="50"></div>
+      <div class="field"><label for="rate">Risk-free rate %</label><input id="rate" class="mono" type="number" step="0.25" min="0" value="4"></div>
+      <div class="field"><label for="earn">Next earnings</label><input id="earn" class="mono" type="date"></div>
+      <div class="field"><label for="acct">Account size $</label><input id="acct" class="mono" type="number" step="100" placeholder="optional"></div>
+      <div class="hint">Pricing context for this trade: IV, days to expiry and the risk-free rate drive the theoretical prices and Greeks; IV Rank, earnings and account size drive the coach.</div>
+      <div class="solver">
+        <span class="lv-k">Solve IV from a quote</span>
+        <div class="field"><label for="svK">Strike</label><input id="svK" class="mono" type="number" step="0.5"></div>
+        <div class="field"><label for="svT">Type</label><select id="svT"><option value="call">Call</option><option value="put">Put</option></select></div>
+        <div class="field"><label for="svP">Market price</label><input id="svP" class="mono" type="number" step="0.01" placeholder="mid"></div>
+        <button class="btn small primary" id="svGo" type="button">Solve</button>
+        <span class="hint" style="flex-basis:auto" id="svOut">Type one option's price from your broker; the implied vol that reproduces it fills the IV box.</span>
+      </div>
+    </div>
+  </section>
+
+  <details class="panel" id="wizardPanel">
+    <summary class="lib-h"><h2>Guided strategy picker</h2><span class="tw">wizard</span></summary>
+    <div class="lib-body">
+      <div class="wz-row">
+        <div class="wz-group"><span class="lv-k">Experience</span><div class="intents" id="wzExperience"></div></div>
+        <div class="wz-group"><span class="lv-k">Risk tolerance</span><div class="intents" id="wzRisk"></div></div>
+        <div class="wz-group"><span class="lv-k">Outlook</span><div class="intents" id="wzOutlook"></div></div>
+        <div class="wz-group"><span class="lv-k">Horizon</span><div class="intents" id="wzHorizon"></div></div>
+      </div>
+      <div class="ctx" style="padding:10px 14px 0">
+        <div class="field"><label for="wzRiskPct">Risk % of account per trade</label><input id="wzRiskPct" class="mono" type="number" step="1" min="1" max="100" value="5"></div>
+        <span class="hint" style="flex-basis:auto">Uses the account size above to suggest a contract count. Strikes are placed by targeting an option delta, not a flat % offset from spot.</span>
+      </div>
+      <p class="note" id="wzNote"></p>
+      <p class="note" style="padding-top:0"><button class="btn primary" id="wzBuild" type="button">Build my trade →</button></p>
+    </div>
+  </details>
+
+  <details class="panel" id="libPanel" open>
+    <summary class="lib-h"><h2>Strategy library</h2><span class="tw">strategies</span></summary>
+    <div class="lib-body">
+      <div class="intents" id="intents"></div>
+      <div class="strats" id="strats"></div>
+      <p class="note">Click a strategy to add it to the current trade. Strikes are placed around spot and the net price is a Black-Scholes estimate at the IV and days above — overwrite it with your real fill.</p>
+    </div>
+  </details>
+
+  <div class="grid">
+    <section class="panel">
+      <div class="panel-h">
+        <h2>Positions</h2>
+        <button class="btn small ghost" id="addCustom" type="button">+ Custom legs</button>
+      </div>
+      <div class="positions" id="positions"></div>
+      <p class="note">Net price is what you paid or received per share for the whole position (debit = paid, credit = received). For stock strategies it is your share cost basis plus any put bought minus any call sold — shares at 355, sold the 365 call for 3.00 → net 352.00 debit. <b>Value now</b> is optional: the current cost to close the whole position, for the 50%-of-max-profit check.</p>
+    </section>
+
+    <div class="right">
+      <div class="stats" id="stats"></div>
+
+      <section class="panel chart-panel">
+        <div class="panel-h">
+          <h2 id="chartTitle">P/L at expiry</h2>
+          <div class="chart-controls">
+            <label class="toggle"><input type="checkbox" id="showLegs" checked> Each position</label>
+            <label class="toggle"><input type="checkbox" id="showTotal" checked> Combined</label>
+            <div class="field"><label for="rangeLo">From</label><input id="rangeLo" class="mono" type="number" step="1"></div>
+            <div class="field"><label for="rangeHi">To</label><input id="rangeHi" class="mono" type="number" step="1"></div>
+            <button class="btn ghost small" id="autoRange" type="button">Auto</button>
+          </div>
+        </div>
+        <div class="chart-body" id="chartBody">
+          <svg id="chart" viewBox="0 0 860 420" role="img" aria-labelledby="chartTitle"></svg>
+          <div class="tip mono" id="tip"></div>
+        </div>
+        <div class="legend" id="legend"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-h"><h2>Coach &amp; commentary</h2></div>
+        <div class="coach" id="coach"></div>
+        <div class="comm" id="autoComm"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-h"><h2>P/L table</h2><span class="foot">At expiry, in dollars, at each strike and breakeven</span></div>
+        <div class="tbl-wrap"><table class="tbl mono" id="tbl"></table></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-h"><h2>Scenario table</h2><span class="foot">At expiry, in dollars, at % moves from today's spot</span></div>
+        <div class="tbl-wrap"><table class="tbl mono" id="scenario"></table></div>
+      </section>
+    </div>
+  </div>
+
+  <p class="foot">Expiry payoff only — no time value, volatility or early assignment on the chart; theoretical prices and Greeks are Black-Scholes at the IV and days you enter, not live option-chain quotes. Same-expiry legs are assumed. Coaching heuristics are drawn from tastytrade/tastylive's public options education. Educational tool, not personalized financial advice. Your trades stay in this browser.</p>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+<script src="js/theme.js"></script>
+<script src="js/shared.js"></script>
+<script src="js/trade-page.js"></script>
+</body>
+</html>

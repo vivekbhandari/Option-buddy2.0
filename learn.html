@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Learn · OptionsBuddy</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Options glossary, IV Rank and delta guidelines, and six habits to check before opening any position.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css">
+<link rel="stylesheet" href="css/app.css">
+<script>(function(){try{var t=localStorage.getItem('ob-theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg ob-navbar sticky-top">
+  <div class="container-xxl">
+    <a class="navbar-brand" href="index.html"><span class="ob">OptionsBuddy</span>Spread Stack</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMain" aria-controls="navMain" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navMain">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        <li class="nav-item"><a class="nav-link" href="index.html">Trade Builder</a></li>
+        <li class="nav-item"><a class="nav-link" href="dashboard.html">Dashboard</a></li>
+        <li class="nav-item"><a class="nav-link active" aria-current="page" href="learn.html">Learn</a></li>
+      </ul>
+      <button class="btn btn-sm ghost btn small" id="themeToggle" type="button" title="Cycle theme">🖥 Auto</button>
+    </div>
+  </div>
+</nav>
+
+<div class="page-wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>Learn</h1>
+      <p>A short reference for options terms, IV Rank &amp; delta guidelines, and habits worth checking before any position — drawn from tastytrade/tastylive's public options education.</p>
+    </div>
+  </header>
+
+  <div class="accordion" id="learnAccordion">
+    <div class="accordion-item">
+      <h2 class="accordion-header">
+        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#accGlossary" aria-expanded="true" aria-controls="accGlossary">
+          New to options? Three words you'll see everywhere
+        </button>
+      </h2>
+      <div id="accGlossary" class="accordion-collapse collapse show" data-bs-parent="#learnAccordion">
+        <div class="accordion-body">
+          <div class="ref">
+            <div><b>Strike price</b><span>The price you're locked into buying or selling at, no matter where the stock actually goes.</span></div>
+            <div><b>Premium</b><span>What you pay (or get paid) for the contract — your cost if you buy it, your income if you sell it.</span></div>
+            <div><b>Breakeven</b><span>The stock price where the trade stops losing and starts winning, once premium is accounted for.</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="accordion-item">
+      <h2 class="accordion-header">
+        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#accGuide" aria-expanded="false" aria-controls="accGuide">
+          IV Rank &amp; delta — general guidelines
+        </button>
+      </h2>
+      <div id="accGuide" class="accordion-collapse collapse" data-bs-parent="#learnAccordion">
+        <div class="accordion-body">
+          <div class="ref">
+            <div><b>IV Rank (where current IV sits vs. its own 52-week range)</b>
+              <table>
+                <tr><td class="r mono">0–25</td><td>Low — premium is cheap. Better for buying (long calls/puts, straddles).</td></tr>
+                <tr><td class="r mono">25–50</td><td>Moderate — workable either way, no strong edge.</td></tr>
+                <tr><td class="r mono">50–75</td><td>Elevated — favors selling premium (spreads, condors, strangles).</td></tr>
+                <tr><td class="r mono">75–100</td><td>High — richest premium, but often means the stock is already moving.</td></tr>
+              </table>
+            </div>
+            <div><b>Delta (rough odds a short strike finishes in-the-money)</b>
+              <table>
+                <tr><td class="r mono">~10–16Δ</td><td>Far OTM — ~84–90% POP, small credit. Conservative short strike.</td></tr>
+                <tr><td class="r mono">~16–30Δ</td><td>Classic credit-spread / condor zone — ~70–84% POP.</td></tr>
+                <tr><td class="r mono">~40–60Δ</td><td>Near the money — bigger premium and risk, lower POP.</td></tr>
+                <tr><td class="r mono">~100Δ</td><td>Deep ITM — behaves almost exactly like the stock itself.</td></tr>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="accordion-item">
+      <h2 class="accordion-header">
+        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#accHabits" aria-expanded="false" aria-controls="accHabits">
+          Before any position: the six habits
+        </button>
+      </h2>
+      <div id="accHabits" class="accordion-collapse collapse" data-bs-parent="#learnAccordion">
+        <div class="accordion-body">
+          <div class="ref">
+            <div><b>Probability &gt; max profit</b><span>A high-probability small win beats a low-probability big one, run enough times.</span></div>
+            <div><b>Let IV Rank pick the strategy</b><span>High IV Rank → sell premium. Low IV Rank → buy premium.</span></div>
+            <div><b>~45 DTE in, 21 DTE out</b><span>Enter around 45 days out; manage or close by 21 regardless of P&amp;L.</span></div>
+            <div><b>Take the 50%, skip the drama</b><span>Many close credit trades at 50% of max profit rather than riding to expiration.</span></div>
+            <div><b>Small size, high occurrence</b><span>No single trade should be a big slice of the account.</span></div>
+            <div><b>Defined risk until you don't need to be</b><span>Spreads and condors cap the downside; undefined risk wants a bigger account.</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="foot">Educational reference only, not personalized financial advice.</p>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+<script src="js/theme.js"></script>
+</body>
+</html>
