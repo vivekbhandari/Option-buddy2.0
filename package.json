@@ -1,0 +1,8 @@
+{
+  "name": "spread-stack",
+  "private": true,
+  "description": "Spread Stack — an options strategy builder, payoff calculator and trade journal. Static site, no build step; this file exists only to run the test suite.",
+  "scripts": {
+    "test": "node --test tests/*.test.js"
+  }
+}

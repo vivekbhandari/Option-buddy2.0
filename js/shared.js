@@ -194,6 +194,48 @@ window.SB = (function () {
   }
   function allPositions(store) { const out = []; store.trades.forEach(t => t.positions.forEach(p => out.push({ t, p }))); return out; }
 
+  // ---------- book-level payoff engine ----------
+  // Finds every zero-crossing of fn between lo and hi via linear interpolation on a fine grid.
+  function breakevens(fn, lo, hi) {
+    const out = [];
+    const n = 2000; const step = (hi - lo) / n;
+    let prev = fn(lo);
+    for (let i = 1; i <= n; i++) {
+      const x = lo + i * step, y = fn(x);
+      if ((prev < 0 && y >= 0) || (prev > 0 && y <= 0)) {
+        const x0 = x - step;
+        const bx = Math.abs(y - prev) < 1e-9 ? x : x0 + (0 - prev) * step / (y - prev);
+        if (!out.length || Math.abs(out[out.length - 1] - bx) > step * 2) out.push(bx);
+      }
+      prev = y;
+    }
+    return out;
+  }
+  function slope(fn, x) { return fn(x + 1) - fn(x); }
+  // Samples every ON position's payoff (and the combined book) once across [lo, hi], plus the
+  // strikes in range, and derives the extrema/unbounded/breakeven facts every view needs —
+  // computed once per update() instead of once per view, since they all need the same curve.
+  function computeBook(positions, mult, lo, hi) {
+    const on = positions.map((p, i) => ({ p, i })).filter(o => o.p.on);
+    const strikes = Array.from(new Set(
+      on.flatMap(o => o.p.legs.filter(l => l.type !== 'stock').map(l => Number(l.strike) || 0).filter(k => k > 0))
+    ));
+    const n = 400;
+    const xs = [];
+    for (let i = 0; i <= n; i++) xs.push(lo + (hi - lo) * i / n);
+    strikes.forEach(k => { if (k > lo && k < hi) xs.push(k); });
+    xs.sort((a, b) => a - b);
+    const series = on.map(o => ({ i: o.i, p: o.p, name: o.p.name, ys: xs.map(x => posPayoffFor(o.p, x, mult)) }));
+    const tot = xs.map((_, idx) => series.reduce((a, s) => a + s.ys[idx], 0));
+    const totalAt = x => on.reduce((a, o) => a + posPayoffFor(o.p, x, mult), 0);
+    let maxP = -Infinity, minP = Infinity, maxAt = xs[0] || 0, minAt = xs[0] || 0;
+    tot.forEach((y, idx) => { if (y > maxP) { maxP = y; maxAt = xs[idx]; } if (y < minP) { minP = y; minAt = xs[idx]; } });
+    const sUp = slope(totalAt, hi + 1000), sDn = slope(totalAt, 0.5);
+    const upUnbounded = sUp > 1e-9, upUnboundedLoss = sUp < -1e-9, dnRisk = sDn > 1e-9;
+    const bes = breakevens(totalAt, Math.max(0, lo - (hi - lo)), hi + (hi - lo));
+    return { on, xs, series, tot, totalAt, maxP, minP, maxAt, minAt, upUnbounded, upUnboundedLoss, dnRisk, bes, strikes };
+  }
+
   // ---------- CSV export (Ledger-compatible columns), real browser download ----------
   function csvText(store) {
     const cols = ['trade_id', 'ticker', 'position_id', 'strategy', 'status', 'opened', 'closed', 'days_held', 'contracts', 'multiplier', 'legs', 'entry_net_per_share', 'exit_net_per_share', 'entry_cost', 'realized_pl', 'exit_reason', 'spot_at_entry', 'iv_at_entry', 'iv_rank_at_entry', 'dte_at_entry', 'notes', 'events'];
@@ -244,6 +286,7 @@ window.SB = (function () {
     STORE_KEY, mintId, blankTrade, example, migrateTrade, loadStore, persistStore,
     esc, fmtUSD, fmtPx, fmtK, ticks, today, EXIT_REASONS, daysBetween,
     legPayoff, posPayoffFor, posTheoFor, posMaxProfitFor, posMaxLossFor, realized, posLabel, allPositions,
+    breakevens, slope, computeBook,
     csvText, downloadCSV,
     getAVKey, setAVKey, fetchAlphaVantageQuote,
   };

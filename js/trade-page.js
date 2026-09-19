@@ -79,23 +79,6 @@
     if (state.lo !== '' && state.hi !== '' && hi > lo) return [lo, hi];
     return autoRange();
   }
-  function breakevens(fn, lo, hi) {
-    const out = [];
-    const n = 2000; const step = (hi - lo) / n;
-    let prev = fn(lo);
-    for (let i = 1; i <= n; i++) {
-      const x = lo + i * step, y = fn(x);
-      if ((prev < 0 && y >= 0) || (prev > 0 && y <= 0)) {
-        const x0 = x - step;
-        const bx = Math.abs(y - prev) < 1e-9 ? x : x0 + (0 - prev) * step / (y - prev);
-        if (!out.length || Math.abs(out[out.length - 1] - bx) > step * 2) out.push(bx);
-      }
-      prev = y;
-    }
-    return out;
-  }
-  function slope(fn, x) { return (fn(x + 1) - fn(x)); }
-
   // ---------- render: positions ----------
   function renderPositions() {
     const host = $('positions');
@@ -279,19 +262,11 @@
   // ---------- render: stats ----------
   function renderStats() {
     const [lo, hi] = range();
-    const on = state.positions.filter(p => p.on);
     const mult = Number(state.mult) || 100;
-    const netTotal = on.reduce((a, p) => a + (Number(p.net) || 0) * (Number(p.contracts) || 0) * mult, 0);
-    const xs = [];
-    const n = 400;
-    for (let i = 0; i <= n; i++) xs.push(lo + (hi - lo) * i / n);
-    allStrikes().forEach(k => { if (k >= lo && k <= hi) xs.push(k); });
-    const ys = xs.map(totalPayoff);
-    let maxP = -Infinity, minP = Infinity, maxAt = 0, minAt = 0;
-    ys.forEach((y, i) => { if (y > maxP) { maxP = y; maxAt = xs[i]; } if (y < minP) { minP = y; minAt = xs[i]; } });
-    const sUp = slope(totalPayoff, hi + 1000), sDn = slope(totalPayoff, 0.5);
-    const upUnbounded = sUp > 1e-9, downUnbounded = sUp < -1e-9;
-    const bes = breakevens(totalPayoff, Math.max(0, lo - (hi - lo)), hi + (hi - lo));
+    const book = SB.computeBook(state.positions, mult, lo, hi);
+    const { on, maxP, minP, maxAt, minAt, upUnbounded, bes } = book;
+    const downUnbounded = book.upUnboundedLoss;
+    const netTotal = on.reduce((a, o) => a + (Number(o.p.net) || 0) * (Number(o.p.contracts) || 0) * mult, 0);
     const maxProfit = upUnbounded ? 'Unlimited' : (maxP <= 0 ? 'None' : fmtUSD(maxP));
     const maxLoss = downUnbounded ? 'Unlimited' : (minP >= 0 ? 'None' : fmtUSD(minP));
     const flat = Math.abs(maxP - minP) < 1e-6;
@@ -306,27 +281,20 @@
     if (rr !== null) cards.push({ k: 'Reward : risk', v: rr.toFixed(2) + ' : 1', s: 'max profit ÷ max loss', cls: '' });
     const c = ctx();
     if (c.S > 0 && on.length) {
-      const g = on.reduce((a, p) => { const t = posTheo(p, c); a.d += t.delta; a.g += t.gamma; a.t += t.theta; a.v += t.vega; return a; }, { d: 0, g: 0, t: 0, v: 0 });
+      const g = on.reduce((a, o) => { const t = posTheo(o.p, c); a.d += t.delta; a.g += t.gamma; a.t += t.theta; a.v += t.vega; return a; }, { d: 0, g: 0, t: 0, v: 0 });
       cards.push({ k: 'Book Greeks', v: `Δ ${g.d.toFixed(0)} · Θ ${fmtUSD(g.t)}`, s: `Γ ${g.g.toFixed(2)} · vega ${fmtUSD(g.v)} · like ${g.d >= 0 ? 'long' : 'short'} ~${Math.abs(g.d).toFixed(0)} shares`, cls: '' });
     }
     if (spot > 0) { const v = totalPayoff(spot); cards.push({ k: 'P/L if held at spot', v: fmtUSD(v), s: 'expiry at ' + fmtPx(spot), cls: v > 0 ? 'pos-v' : v < 0 ? 'neg-v' : '' }); }
     $('stats').innerHTML = cards.map(c => `<div class="stat"><div class="k">${c.k}</div><div class="v mono ${c.cls}">${c.v}</div><div class="s">${c.s}</div></div>`).join('');
-    return { lo, hi, bes };
+    return { lo, hi, bes, book };
   }
 
   // ---------- render: chart ----------
   let chartModel = null;
-  function renderChart(lo, hi, bes) {
+  function renderChart(lo, hi, bes, book) {
     const W = 860, H = 420, m = { t: 18, r: 20, b: 40, l: 66 };
     const iw = W - m.l - m.r, ih = H - m.t - m.b;
-    const on = state.positions.map((p, i) => ({ p, i })).filter(o => o.p.on);
-    const n = 300;
-    const xs = [];
-    for (let i = 0; i <= n; i++) xs.push(lo + (hi - lo) * i / n);
-    allStrikes().forEach(k => { if (k > lo && k < hi) xs.push(k); });
-    xs.sort((a, b) => a - b);
-    const series = on.map(o => ({ i: o.i, name: o.p.name, ys: xs.map(x => posPayoff(o.p, x)) }));
-    const tot = xs.map(totalPayoff);
+    const { xs, series, tot } = book;
     const showTotal = $('showTotal').checked;
     let yMin = 0, yMax = 0;
     if (showTotal) { yMin = Math.min(0, ...tot); yMax = Math.max(0, ...tot); }
@@ -350,7 +318,7 @@
       g += `<polygon points="${X(xs[0])},${y0} ${above.join(' ')} ${X(xs[xs.length - 1])},${y0}" fill="var(--good-fill)"/>`;
       g += `<polygon points="${X(xs[0])},${y0} ${below.join(' ')} ${X(xs[xs.length - 1])},${y0}" fill="var(--bad-fill)"/>`;
     }
-    const ks = Array.from(new Set(allStrikes())).filter(k => k > lo && k < hi);
+    const ks = book.strikes.filter(k => k > lo && k < hi);
     ks.forEach(k => { g += `<line x1="${X(k)}" x2="${X(k)}" y1="${m.t}" y2="${H - m.b}" stroke="var(--axis)" stroke-width="1" stroke-dasharray="2 4"/>`; g += `<text x="${X(k)}" y="${m.t + 10}" text-anchor="middle" font-size="10" fill="var(--ink-2)" font-family="IBM Plex Mono, monospace">${k}</text>`; });
     const spot = Number(state.spot);
     if (spot > lo && spot < hi) { g += `<line x1="${X(spot)}" x2="${X(spot)}" y1="${m.t}" y2="${H - m.b}" stroke="var(--ink-2)" stroke-width="1.5"/>`; g += `<text x="${X(spot) + 4}" y="${H - m.b - 6}" font-size="10" fill="var(--ink-2)">spot ${fmtPx(spot)}</text>`; }
@@ -433,23 +401,16 @@
   }
 
   // ---------- commentary ----------
-  function analyze(lo, hi, bes) {
+  function analyze(lo, hi, bes, book) {
     const on = state.positions.filter(p => p.on);
     const mult = Number(state.mult) || 100;
     const spot = Number(state.spot);
     const tk = state.ticker || 'the underlying';
     if (!on.length) return { facts: null, paras: ['Add a position to get a read on the trade.'] };
     const net = on.reduce((a, p) => a + (Number(p.net) || 0) * (Number(p.contracts) || 0) * mult, 0);
-    const xs = []; for (let i = 0; i <= 400; i++) xs.push(lo + (hi - lo) * i / 400);
-    allStrikes().forEach(k => { if (k >= lo && k <= hi) xs.push(k); });
-    xs.sort((a, b) => a - b);
-    const ys = xs.map(totalPayoff);
-    let maxP = -Infinity, minP = Infinity, maxAt = 0, minAt = 0;
-    ys.forEach((y, i) => { if (y > maxP) { maxP = y; maxAt = xs[i]; } if (y < minP) { minP = y; minAt = xs[i]; } });
-    const sUp = slope(totalPayoff, hi + 1000), sDn = slope(totalPayoff, 0.5);
-    const upUnb = sUp > 1e-9, upUnbLoss = sUp < -1e-9, dnRisk = sDn > 1e-9;
+    const { xs, tot: ys, maxP, minP, maxAt, minAt, upUnbounded: upUnb, upUnboundedLoss: upUnbLoss, dnRisk } = book;
     const flat = Math.abs(maxP - minP) < 1e-6;
-    const ks = Array.from(new Set(allStrikes())).sort((a, b) => a - b);
+    const ks = book.strikes.slice().sort((a, b) => a - b);
     const regions = []; let cur = null;
     xs.forEach((x, i) => { if (ys[i] > 0) { if (!cur) cur = [x, x]; else cur[1] = x; } else if (cur) { regions.push(cur); cur = null; } });
     if (cur) regions.push(cur);
@@ -511,7 +472,7 @@
     if (upUnbLoss) notes.push('<span class="flag">The book loses without limit on a rally.</span> A long call above the short strike would define the risk.');
     if (ks.length && !flat) {
       const inner = ks.filter(k => k > lo && k < hi);
-      if (inner.length >= 2) notes.push(`The kinks in the line are your strikes (${inner.join(', ')}); between ${inner[0]} and ${inner[1]} P/L moves ${fmtUSD(Math.abs(slope(totalPayoff, (inner[0] + inner[1]) / 2)))} per $1 of ${tk}.`);
+      if (inner.length >= 2) notes.push(`The kinks in the line are your strikes (${inner.join(', ')}); between ${inner[0]} and ${inner[1]} P/L moves ${fmtUSD(Math.abs(SB.slope(totalPayoff, (inner[0] + inner[1]) / 2)))} per $1 of ${tk}.`);
       else if (inner.length === 1) notes.push(`The kink in the line is your ${inner[0]} strike.`);
     }
     if (notes.length) paras.push(notes.join(' '));
@@ -519,7 +480,7 @@
     return { facts: { net, maxP, minP, bes, upUnb, upUnbLoss, dnRisk, regions, spot }, paras };
   }
 
-  function coachLines(lo, hi, bes) {
+  function coachLines(lo, hi, bes, book) {
     const on = state.positions.filter(p => p.on);
     const c = ctx(); const out = [];
     const line = (kind, html) => out.push({ kind, html });
@@ -573,19 +534,18 @@
       }
     });
     const acct = Number(state.acct);
-    if (acct > 0) {
-      const xs = []; for (let i = 0; i <= 200; i++) xs.push(lo + (hi - lo) * i / 200);
-      const minP = Math.min(...xs.map(totalPayoff));
-      if (minP < 0) { const pct = -minP / acct * 100; line(pct > 5 ? 'bad' : 'ok', `This book risks about <em>${pct.toFixed(1)}%</em> of your account in the chart range — ${pct > 5 ? 'most small-size, high-occurrence approaches keep single trades well under 5%' : 'reasonably sized'}.`); }
+    if (acct > 0 && book.minP < 0) {
+      const pct = -book.minP / acct * 100;
+      line(pct > 5 ? 'bad' : 'ok', `This book risks about <em>${pct.toFixed(1)}%</em> of your account in the chart range — ${pct > 5 ? 'most small-size, high-occurrence approaches keep single trades well under 5%' : 'reasonably sized'}.`);
     }
     on.forEach(p => { if (p.strat) { const st = stratById(p.strat); line('info', `<em>${p.name}:</em> ${st.tip}`); line('warn', `<em>Watch (${p.name.toLowerCase()}):</em> ${st.watch}`); } });
     return out;
   }
-  function renderCommentary(lo, hi, bes) {
-    const cl = coachLines(lo, hi, bes);
+  function renderCommentary(lo, hi, bes, book) {
+    const cl = coachLines(lo, hi, bes, book);
     $('coach').innerHTML = cl.length ? '<div class="eyebrow">Coach</div>' + cl.map(l => `<div class="cl ${l.kind}"><span class="dot"></span><p>${l.html}</p></div>`).join('') : '';
     $('coach').hidden = !cl.length;
-    const { paras } = analyze(lo, hi, bes);
+    const { paras } = analyze(lo, hi, bes, book);
     $('autoComm').innerHTML = '<div class="eyebrow">Trade read · updates as you edit</div>' + paras.map(p => `<p>${p}</p>`).join('');
   }
 
@@ -597,9 +557,9 @@
     $('chartTitle').textContent = (state.ticker || 'Underlying').toUpperCase() + ' · P/L at expiry';
     const [alo, ahi] = autoRange();
     $('rangeLo').placeholder = alo; $('rangeHi').placeholder = ahi;
-    const { lo, hi, bes } = renderStats();
-    renderChart(lo, hi, bes);
-    renderCommentary(lo, hi, bes);
+    const { lo, hi, bes, book } = renderStats();
+    renderChart(lo, hi, bes, book);
+    renderCommentary(lo, hi, bes, book);
     renderTable(lo, hi, bes);
     renderScenario();
   }
