@@ -284,7 +284,7 @@ window.SB = (function () {
   // Yahoo has no public API and its fundamentals endpoint can't be called directly from a
   // browser (cookie+crumb auth, no CORS headers), so this goes through a Cloudflare Worker
   // that does that handshake server-to-server. Fill in the Worker's URL once it's deployed.
-  const YAHOO_PROXY_URL = '';
+  const YAHOO_PROXY_URL = 'https://spread-stack-yahoo-proxy.vivekbhandari6104.workers.dev';
   async function fetchFundamentals(ticker) {
     if (!YAHOO_PROXY_URL) return { error: 'Fundamentals proxy not configured yet — see yahoo-proxy/README.md.' };
     const ctl = new AbortController();
