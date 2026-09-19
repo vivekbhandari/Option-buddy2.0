@@ -234,6 +234,10 @@ table.tbl th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06e
 .tbl-wrap { overflow-x: auto; }
 .gain { color: var(--good-text); } .loss { color: var(--bad-text); }
 .note { font-size: 12px; color: var(--muted); padding: 8px 14px 12px; }
+.card-summary { font-size: 13px; color: var(--ink-2); max-width: 80ch; margin: 10px 0 0; }
+.pe-info { border: none; background: var(--surface-2); color: var(--ink-2); width: 16px; height: 16px; border-radius: 50%; font-size: 11px; line-height: 16px; padding: 0; cursor: pointer; margin-left: 6px; }
+.pe-info:hover { color: var(--ink); }
+.pe-note { font-size: 12px; color: var(--ink-2); margin-top: 4px; }
 .foot { font-size: 12px; color: var(--muted); max-width: 70ch; }
 
 /* Learn page — Bootstrap accordion themed to match */

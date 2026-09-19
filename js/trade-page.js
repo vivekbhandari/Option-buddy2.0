@@ -54,6 +54,8 @@
     $('rangeLo').value = state.lo; $('rangeHi').value = state.hi;
     $('iv').value = state.iv; $('dte').value = state.dte; $('ivr').value = state.ivr; $('rate').value = state.rate === undefined ? 4 : state.rate; $('earn').value = state.earn || ''; $('acct').value = state.acct || '';
     $('libPanel').open = !state.positions.length;
+    $('fundBody').hidden = true; lastFundTicker = '';
+    if ((state.ticker || '').trim()) loadFundamentals();
   }
   function switchTrade(i) { store.active = i; state = store.trades[i]; loadHeader(); update(); }
 
@@ -226,28 +228,69 @@
   }
 
   // ---------- fundamentals (Yahoo Finance, via yahoo-proxy/) ----------
-  $('fundGo').addEventListener('click', async () => {
+  function renderSparkline(points) {
+    const svg = $('fundChart');
+    if (!points || points.length < 2) { svg.innerHTML = ''; return; }
+    const W = 640, H = 140, pad = 6;
+    const closes = points.map(p => p.close);
+    const lo = Math.min(...closes), hi = Math.max(...closes), span = (hi - lo) || 1;
+    const X = i => pad + (i / (points.length - 1)) * (W - pad * 2);
+    const Y = v => H - pad - ((v - lo) / span) * (H - pad * 2);
+    const d = points.map((p, i) => `${i ? 'L' : 'M'}${X(i).toFixed(1)},${Y(p.close).toFixed(1)}`).join(' ');
+    const areaD = `${d} L${X(points.length - 1).toFixed(1)},${H - pad} L${X(0).toFixed(1)},${H - pad} Z`;
+    const first = closes[0], last = closes[closes.length - 1];
+    const up = last >= first;
+    const color = up ? 'var(--good)' : 'var(--bad)';
+    const fill = up ? 'var(--good-fill)' : 'var(--bad-fill)';
+    const pct = ((last - first) / first * 100);
+    svg.innerHTML = `
+      <path d="${esc(areaD)}" fill="${fill}" stroke="none"/>
+      <path d="${esc(d)}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round"/>
+      <text x="${pad}" y="16" font-size="11" fill="var(--muted)" font-family="IBM Plex Mono, monospace">${esc(fmtPx(lo))} – ${esc(fmtPx(hi))} (3mo)</text>
+      <text x="${W - pad}" y="16" text-anchor="end" font-size="11" fill="${color}" font-family="IBM Plex Mono, monospace">${esc(fmtPx(last))} (${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%)</text>
+    `;
+  }
+  let lastFundTicker = '';
+  async function loadFundamentals() {
     const tk = (state.ticker || '').trim();
     if (!tk) { $('fundOut').textContent = 'Enter a ticker first.'; return; }
-    $('fundGo').disabled = true; $('fundOut').textContent = 'Loading…'; $('fundStats').hidden = true;
-    const r = await SB.fetchFundamentals(tk);
+    lastFundTicker = tk;
+    $('fundGo').disabled = true; $('fundOut').textContent = 'Loading…';
+    const [r, h] = await Promise.all([SB.fetchFundamentals(tk), SB.fetchPriceHistory(tk, '3mo', '1d')]);
     $('fundGo').disabled = false;
-    if (r.error) { $('fundOut').textContent = r.error; return; }
+    if (tk !== state.ticker.trim()) return; // ticker changed again while this was in flight
+    if (r.error) { $('fundOut').textContent = r.error; $('fundBody').hidden = true; return; }
     const d = r.data;
     const price = d.price || {}, sd = d.summaryDetail || {}, ap = d.assetProfile || {};
     const f = (field) => (field && field.fmt) || '—';
     const cards = [
       { k: 'Company', v: price.longName || tk, s: [ap.sector, ap.industry].filter(Boolean).join(' · ') || '—' },
       { k: 'Market cap', v: f(sd.marketCap), s: 'shares outstanding × price' },
-      { k: 'P/E (trailing / forward)', v: `${f(sd.trailingPE)} / ${f(sd.forwardPE)}`, s: 'price ÷ earnings per share' },
+      { k: 'P/E (trailing / forward)', v: `${f(sd.trailingPE)} / ${f(sd.forwardPE)}`, s: 'price ÷ earnings per share', info: SB.peGuide(ap.sector) },
       { k: '52-week range', v: `${f(sd.fiftyTwoWeekLow)} – ${f(sd.fiftyTwoWeekHigh)}`, s: 'low to high' },
       { k: 'Dividend yield', v: f(sd.dividendYield), s: 'annualized' },
       { k: 'Beta', v: f(sd.beta), s: 'volatility vs. the market' },
     ];
-    $('fundStats').innerHTML = cards.map(c => `<div class="stat"><div class="k">${esc(c.k)}</div><div class="v mono">${esc(c.v)}</div><div class="s">${esc(c.s)}</div></div>`).join('');
-    $('fundStats').hidden = false;
+    $('fundStats').innerHTML = cards.map((c, i) => `<div class="stat">
+        <div class="k">${esc(c.k)}${c.info ? `<button class="pe-info" type="button" data-info="${i}" title="What's a good P/E for this sector?" aria-label="Sector P/E guideline">i</button>` : ''}</div>
+        <div class="v mono">${esc(c.v)}</div>
+        <div class="s">${esc(c.s)}</div>
+        ${c.info ? `<div class="pe-note" id="peNote-${i}" hidden>${esc(c.info)}</div>` : ''}
+      </div>`).join('');
+    const summary = ap.longBusinessSummary ? (ap.longBusinessSummary.length > 320 ? ap.longBusinessSummary.slice(0, 320).trim() + '…' : ap.longBusinessSummary) : '';
+    $('fundSummary').textContent = summary;
+    $('fundSummary').hidden = !summary;
+    renderSparkline(h.points);
+    $('fundChartBody').hidden = !h.points;
+    $('fundBody').hidden = false;
     $('fundOut').textContent = `Updated ${today()}.`;
+  }
+  $('fundGo').addEventListener('click', loadFundamentals);
+  $('fundStats').addEventListener('click', (e) => {
+    const btn = e.target.closest('.pe-info'); if (!btn) return;
+    const note = $(`peNote-${btn.dataset.info}`); if (note) note.hidden = !note.hidden;
   });
+  $('ticker').addEventListener('blur', () => { if ((state.ticker || '').trim() && state.ticker.trim() !== lastFundTicker) loadFundamentals(); });
 
   // ---------- export ----------
   $('exportBtn').addEventListener('click', () => SB.downloadCSV(store));

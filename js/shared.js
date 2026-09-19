@@ -267,6 +267,42 @@ window.SB = (function () {
       return { error: e.name === 'AbortError' ? 'Request to the fundamentals proxy timed out.' : 'Network error reaching the fundamentals proxy.' };
     } finally { clearTimeout(timer); }
   }
+  async function fetchPriceHistory(ticker, range, interval) {
+    if (!YAHOO_PROXY_URL) return { error: 'Fundamentals proxy not configured yet — see yahoo-proxy/README.md.' };
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), 10000);
+    try {
+      const url = `${YAHOO_PROXY_URL}/chart/${encodeURIComponent(ticker)}?range=${range || '3mo'}&interval=${interval || '1d'}`;
+      const res = await fetch(url, { signal: ctl.signal });
+      const data = await res.json();
+      if (!res.ok) return { error: data && data.error ? data.error : `Proxy returned HTTP ${res.status}` };
+      const ts = data.timestamp || [];
+      const closes = (data.indicators && data.indicators.quote && data.indicators.quote[0] && data.indicators.quote[0].close) || [];
+      const points = ts.map((t, i) => ({ date: t, close: closes[i] })).filter(p => p.close != null);
+      if (!points.length) return { error: `No price history found for "${ticker}"` };
+      return { points };
+    } catch (e) {
+      return { error: e.name === 'AbortError' ? 'Request to the fundamentals proxy timed out.' : 'Network error reaching the fundamentals proxy.' };
+    } finally { clearTimeout(timer); }
+  }
+
+  // ---------- sector P/E rules of thumb (static reference, not a live sector average) ----------
+  const SECTOR_PE_GUIDE = {
+    'Technology': 'Tech P/Es commonly run 20–40+, reflecting growth expectations — over ~50 is rich even for a fast grower.',
+    'Healthcare': 'Typically 15–25; biotech/pharma with unproven pipelines can run far higher or go negative.',
+    'Financial Services': 'Often 8–15 — banks and insurers are usually valued on book value and ROE more than P/E.',
+    'Consumer Cyclical': 'Wide range, roughly 10–25, tracking the economic cycle.',
+    'Consumer Defensive': 'Typically 15–22 — steady earners priced for safety, not growth.',
+    'Energy': 'Swings hard with commodity prices — single digits in downturns, 15–20+ in upturns.',
+    'Utilities': 'Typically 15–20 — regulated, bond-like, low growth.',
+    'Industrials': 'Roughly 15–22.',
+    'Basic Materials': 'Cyclical, typically 10–18.',
+    'Real Estate': 'REITs are usually valued on FFO, not P/E — a low or negative headline P/E is common and not necessarily cheap.',
+    'Communication Services': 'Wide range, roughly 15–30.',
+  };
+  function peGuide(sector) {
+    return SECTOR_PE_GUIDE[sector] || "No sector rule of thumb on file for this one — compare against the company's own history and its closest peers instead.";
+  }
 
   return {
     bs, roundStrike, findStrikeByDelta,
@@ -276,6 +312,6 @@ window.SB = (function () {
     legPayoff, posPayoffFor, posTheoFor, posMaxProfitFor, posMaxLossFor, realized, posLabel, allPositions,
     breakevens, slope, computeBook,
     csvText, downloadCSV,
-    fetchFundamentals,
+    fetchFundamentals, fetchPriceHistory, peGuide,
   };
 })();

@@ -57,9 +57,15 @@
     <div class="lib-body">
       <div class="ctx" style="padding-bottom:0">
         <button class="btn small primary" id="fundGo" type="button">Load fundamentals for this ticker</button>
-        <span class="hint" style="flex-basis:auto" id="fundOut">Sector, market cap, P/E, 52-week range and more, pulled from Yahoo Finance.</span>
+        <span class="hint" style="flex-basis:auto" id="fundOut">Loads automatically when you tab away from the ticker field, or click here. Sector, market cap, P/E, 52-week range and a price chart, pulled from Yahoo Finance.</span>
       </div>
-      <div class="stats" id="fundStats" style="margin:12px 14px 14px" hidden></div>
+      <div id="fundBody" style="margin:12px 14px 14px" hidden>
+        <div class="stats" id="fundStats"></div>
+        <p class="card-summary" id="fundSummary"></p>
+        <div class="chart-body" id="fundChartBody" style="padding:8px 0 0">
+          <svg id="fundChart" viewBox="0 0 640 140" role="img" aria-label="Recent price history"></svg>
+        </div>
+      </div>
     </div>
   </details>
 

@@ -10,12 +10,14 @@
 // Routes:
 //   GET /quote/:ticker?modules=assetProfile,financialData,defaultKeyStatistics,summaryDetail
 //     -> fundamentals (quoteSummary)
-//   GET /chart/:ticker
+//   GET /chart/:ticker?range=3mo&interval=1d
 //     -> price history / current quote (chart)
 
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 const CRUMB_TTL_MS = 50 * 60 * 1000; // Yahoo's crumb/cookie pair is good for roughly an hour; refresh a bit early
 const DEFAULT_MODULES = 'assetProfile,financialData,defaultKeyStatistics,summaryDetail,price';
+const VALID_RANGES = new Set(['1d', '5d', '1mo', '3mo', '6mo', '1y', '2y', '5y', '10y', 'ytd', 'max']);
+const VALID_INTERVALS = new Set(['1m', '2m', '5m', '15m', '30m', '60m', '90m', '1h', '1d', '5d', '1wk', '1mo', '3mo']);
 
 // Module-scope cache: persists across requests on a warm Worker isolate,
 // reset on cold start — fine for this volume, no KV/Durable Object needed.
@@ -100,7 +102,9 @@ export default {
       }
 
       if (route === 'chart') {
-        const yRes = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}`, {
+        const range = VALID_RANGES.has(url.searchParams.get('range')) ? url.searchParams.get('range') : '3mo';
+        const interval = VALID_INTERVALS.has(url.searchParams.get('interval')) ? url.searchParams.get('interval') : '1d';
+        const yRes = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?range=${range}&interval=${interval}`, {
           headers: { 'User-Agent': UA },
         });
         if (!yRes.ok) return json({ error: `Yahoo chart returned HTTP ${yRes.status}` }, 502, env);
