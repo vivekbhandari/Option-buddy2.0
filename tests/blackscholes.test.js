@@ -55,23 +55,6 @@ test('bs() gamma is positive and symmetric for calls and puts at the same strike
   assert.ok(Math.abs(call.gamma - put.gamma) < 1e-9, 'gamma is identical for calls/puts at the same strike (put-call parity)');
 });
 
-test('solveIV() round-trips: pricing at a known IV and solving recovers it', () => {
-  const { SB } = loadSB();
-  const S = 150, K = 155, T = 30 / 365, r = 0.04, trueSigma = 0.42;
-  const price = SB.bs('call', S, K, T, trueSigma, r).price;
-  const solved = SB.solveIV('call', S, K, T, price, r);
-  assert.ok(solved !== null);
-  assert.ok(Math.abs(solved - trueSigma) < 0.001, `solved IV ${solved} should be ~${trueSigma}`);
-});
-
-test('solveIV() returns null when the price is at or below intrinsic value', () => {
-  const { SB } = loadSB();
-  // a deep ITM call priced at exactly intrinsic value implies zero time value -> no valid IV
-  const S = 150, K = 100, T = 30 / 365, r = 0.04;
-  const intrinsic = S - K * Math.exp(-r * T);
-  assert.equal(SB.solveIV('call', S, K, T, intrinsic, r), null);
-});
-
 test('roundStrike() snaps to sensible increments by price tier', () => {
   const { SB } = loadSB();
   assert.equal(SB.roundStrike(10.3, 15), 10.5);   // S < 20 -> $0.50 increments

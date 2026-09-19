@@ -8,7 +8,7 @@
   'use strict';
   const $ = (id) => document.getElementById(id);
   const SERIES = ['var(--s1)', 'var(--s2)', 'var(--s3)', 'var(--s4)', 'var(--s5)', 'var(--s6)'];
-  const { bs, solveIV, roundStrike, findStrikeByDelta, CATS, STRATS, INTENTS, stratById, L, esc, fmtUSD, fmtPx, fmtK, ticks, today, EXIT_REASONS, daysBetween, legPayoff, realized, posLabel, posMaxProfitFor } = SB;
+  const { bs, roundStrike, findStrikeByDelta, CATS, STRATS, INTENTS, stratById, L, esc, fmtUSD, fmtPx, fmtK, ticks, today, EXIT_REASONS, daysBetween, legPayoff, realized, posLabel, posMaxProfitFor } = SB;
 
   let store = SB.loadStore();
   let state = store.trades[store.active];
@@ -225,25 +225,6 @@
     }
   }
 
-  // ---------- live price (Alpha Vantage) ----------
-  $('avKey').value = SB.getAVKey();
-  $('avKey').addEventListener('input', e => SB.setAVKey(e.target.value.trim()));
-  $('avKeyToggle').addEventListener('click', () => { $('avKey').type = $('avKey').type === 'password' ? 'text' : 'password'; });
-  $('avGo').addEventListener('click', async () => {
-    const key = $('avKey').value.trim();
-    const tk = (state.ticker || '').trim();
-    if (!key) { $('avOut').textContent = 'Enter an Alpha Vantage API key first — get a free one at alphavantage.co/support/#api-key.'; return; }
-    if (!tk) { $('avOut').textContent = 'Enter a ticker first.'; return; }
-    $('avGo').disabled = true; $('avOut').textContent = 'Fetching…';
-    const q = await SB.fetchAlphaVantageQuote(tk, key);
-    $('avGo').disabled = false;
-    if (q.error) { $('avOut').textContent = q.error; return; }
-    state.spot = q.price; $('spot').value = q.price;
-    $('avOut').textContent = `${tk} last close ${fmtPx(q.price)}${q.date ? ' on ' + q.date : ''}${q.changePct ? ' (' + q.changePct + ')' : ''}.`;
-    if (!$('svK').value) $('svK').value = roundStrike(q.price, q.price);
-    update(false); refreshAllGreeks();
-  });
-
   // ---------- fundamentals (Yahoo Finance, via yahoo-proxy/) ----------
   $('fundGo').addEventListener('click', async () => {
     const tk = (state.ticker || '').trim();
@@ -266,18 +247,6 @@
     $('fundStats').innerHTML = cards.map(c => `<div class="stat"><div class="k">${esc(c.k)}</div><div class="v mono">${esc(c.v)}</div><div class="s">${esc(c.s)}</div></div>`).join('');
     $('fundStats').hidden = false;
     $('fundOut').textContent = `Updated ${today()}.`;
-  });
-
-  // ---------- IV solver ----------
-  $('svGo').addEventListener('click', () => {
-    const c = ctx(); const K = Number($('svK').value), P = Number($('svP').value), type = $('svT').value;
-    if (!(c.S > 0)) { $('svOut').textContent = 'Enter the spot price first.'; return; }
-    if (!(c.T > 0)) { $('svOut').textContent = 'Days to expiry must be above zero.'; return; }
-    const iv = solveIV(type, c.S, K, c.T, P);
-    if (iv === null) { $('svOut').textContent = 'No volatility reproduces that price — check strike, type and that the price is above intrinsic value.'; return; }
-    state.iv = Math.round(iv * 1000) / 10; $('iv').value = state.iv;
-    $('svOut').textContent = `Implied vol ${state.iv}% from the ${K} ${type} at ${fmtPx(P)} — applied to every leg.`;
-    update(false); refreshAllGreeks();
   });
 
   // ---------- export ----------
@@ -604,7 +573,7 @@
     loadHeader(); update();
   });
   $('ticker').addEventListener('input', e => { state.ticker = e.target.value.toUpperCase(); update(false); });
-  $('spot').addEventListener('input', e => { state.spot = e.target.value; update(false); refreshAllGreeks(); if (!$('svK').value && Number(state.spot) > 0) $('svK').value = roundStrike(Number(state.spot), Number(state.spot)); });
+  $('spot').addEventListener('input', e => { state.spot = e.target.value; update(false); refreshAllGreeks(); });
   $('mult').addEventListener('input', e => { state.mult = Number(e.target.value) || 100; update(false); });
   $('rangeLo').addEventListener('input', e => { state.lo = e.target.value; update(false); });
   $('rangeHi').addEventListener('input', e => { state.hi = e.target.value; update(false); });

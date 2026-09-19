@@ -2,10 +2,9 @@
 -- Run this once in the Supabase SQL Editor for a fresh project.
 -- Safe to re-run (uses "if not exists" / "or replace" throughout).
 
--- ---------- profiles: one row per user, holds their Alpha Vantage key ----------
+-- ---------- profiles: one row per user (anchor row for future per-user settings) ----------
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
-  alpha_vantage_key text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

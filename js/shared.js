@@ -36,15 +36,6 @@ window.SB = (function () {
     const rho = sgn * K * T * Math.exp(-r * T) * ncdf(sgn * d2) / 100;
     return { price, delta, gamma, theta, vega, rho };
   }
-  function solveIV(type, S, K, T, price, r) {
-    if (r === undefined || r === null || isNaN(r)) r = DEFAULT_RATE;
-    if (!(S > 0 && K > 0 && T > 0 && price > 0)) return null;
-    const intr = type === 'call' ? Math.max(S - K * Math.exp(-r * T), 0) : Math.max(K * Math.exp(-r * T) - S, 0);
-    if (price <= intr + 1e-6) return null;
-    let lo = 0.01, hi = 5;
-    for (let i = 0; i < 80; i++) { const mid = (lo + hi) / 2; if (bs(type, S, K, T, mid, r).price > price) hi = mid; else lo = mid; }
-    return (lo + hi) / 2;
-  }
   function roundStrike(x, S) { const inc = S < 20 ? 0.5 : S < 100 ? 1 : S < 250 ? 2.5 : 5; return Math.round(x / inc) * inc; }
   // bisection search for the strike whose Black-Scholes delta is closest to targetDelta
   // (targetDelta is signed: positive for calls, negative for puts, matching bs().delta —
@@ -257,29 +248,6 @@ window.SB = (function () {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
-  // ---------- live price (Alpha Vantage, optional — user supplies their own free key) ----------
-  const AV_KEY_STORAGE = 'spreadstack.avkey';
-  function getAVKey() { try { return localStorage.getItem(AV_KEY_STORAGE) || ''; } catch (e) { return ''; } }
-  function setAVKey(key) { try { if (key) localStorage.setItem(AV_KEY_STORAGE, key); else localStorage.removeItem(AV_KEY_STORAGE); } catch (e) { /* ignore */ } }
-  async function fetchAlphaVantageQuote(ticker, key) {
-    const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${encodeURIComponent(ticker)}&apikey=${encodeURIComponent(key)}`;
-    const ctl = new AbortController();
-    const timer = setTimeout(() => ctl.abort(), 8000);
-    try {
-      const res = await fetch(url, { signal: ctl.signal });
-      if (!res.ok) return { error: `Alpha Vantage returned an error (HTTP ${res.status}).` };
-      const data = await res.json();
-      if (data['Note']) return { error: 'Rate limited by Alpha Vantage — the free tier allows 25 requests/day. Try again later.' };
-      if (data['Information']) return { error: data['Information'] };
-      const quote = data['Global Quote'];
-      const price = quote && Number(quote['05. price']);
-      if (!(price > 0)) return { error: 'No quote returned — check the ticker symbol and API key.' };
-      return { price, date: quote['07. latest trading day'], changePct: quote['10. change percent'] };
-    } catch (e) {
-      return { error: e.name === 'AbortError' ? 'Request to Alpha Vantage timed out.' : 'Network error reaching Alpha Vantage.' };
-    } finally { clearTimeout(timer); }
-  }
-
   // ---------- fundamentals (Yahoo Finance, via a small proxy — see yahoo-proxy/README.md) ----------
   // Yahoo has no public API and its fundamentals endpoint can't be called directly from a
   // browser (cookie+crumb auth, no CORS headers), so this goes through a Cloudflare Worker
@@ -301,14 +269,13 @@ window.SB = (function () {
   }
 
   return {
-    bs, solveIV, roundStrike, findStrikeByDelta,
+    bs, roundStrike, findStrikeByDelta,
     CATS, STRATS, INTENTS, stratById, L,
     STORE_KEY, mintId, blankTrade, example, migrateTrade, loadStore, persistStore,
     esc, fmtUSD, fmtPx, fmtK, ticks, today, EXIT_REASONS, daysBetween,
     legPayoff, posPayoffFor, posTheoFor, posMaxProfitFor, posMaxLossFor, realized, posLabel, allPositions,
     breakevens, slope, computeBook,
     csvText, downloadCSV,
-    getAVKey, setAVKey, fetchAlphaVantageQuote,
     fetchFundamentals,
   };
 })();
