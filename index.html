@@ -52,6 +52,17 @@
     </div>
   </header>
 
+  <details class="panel" id="fundPanel">
+    <summary class="lib-h"><h2>Fundamentals</h2><span class="tw">Yahoo Finance</span></summary>
+    <div class="lib-body">
+      <div class="ctx" style="padding-bottom:0">
+        <button class="btn small primary" id="fundGo" type="button">Load fundamentals for this ticker</button>
+        <span class="hint" style="flex-basis:auto" id="fundOut">Sector, market cap, P/E, 52-week range and more, pulled from Yahoo Finance.</span>
+      </div>
+      <div class="stats" id="fundStats" style="margin:12px 14px 14px" hidden></div>
+    </div>
+  </details>
+
   <nav class="trades" aria-label="Saved trades">
     <div class="tabs" id="tabs"></div>
     <div class="tabs-actions">

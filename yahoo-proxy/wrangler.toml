@@ -1,0 +1,6 @@
+name = "spread-stack-yahoo-proxy"
+main = "worker.js"
+compatibility_date = "2024-09-01"
+
+[vars]
+ALLOWED_ORIGIN = "https://vivekbhandari.github.io"

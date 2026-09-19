@@ -280,6 +280,26 @@ window.SB = (function () {
     } finally { clearTimeout(timer); }
   }
 
+  // ---------- fundamentals (Yahoo Finance, via a small proxy — see yahoo-proxy/README.md) ----------
+  // Yahoo has no public API and its fundamentals endpoint can't be called directly from a
+  // browser (cookie+crumb auth, no CORS headers), so this goes through a Cloudflare Worker
+  // that does that handshake server-to-server. Fill in the Worker's URL once it's deployed.
+  const YAHOO_PROXY_URL = '';
+  async function fetchFundamentals(ticker) {
+    if (!YAHOO_PROXY_URL) return { error: 'Fundamentals proxy not configured yet — see yahoo-proxy/README.md.' };
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), 10000);
+    try {
+      const url = `${YAHOO_PROXY_URL}/quote/${encodeURIComponent(ticker)}?modules=assetProfile,summaryDetail,price`;
+      const res = await fetch(url, { signal: ctl.signal });
+      const data = await res.json();
+      if (!res.ok) return { error: data && data.error ? data.error : `Proxy returned HTTP ${res.status}` };
+      return { data };
+    } catch (e) {
+      return { error: e.name === 'AbortError' ? 'Request to the fundamentals proxy timed out.' : 'Network error reaching the fundamentals proxy.' };
+    } finally { clearTimeout(timer); }
+  }
+
   return {
     bs, solveIV, roundStrike, findStrikeByDelta,
     CATS, STRATS, INTENTS, stratById, L,
@@ -289,5 +309,6 @@ window.SB = (function () {
     breakevens, slope, computeBook,
     csvText, downloadCSV,
     getAVKey, setAVKey, fetchAlphaVantageQuote,
+    fetchFundamentals,
   };
 })();

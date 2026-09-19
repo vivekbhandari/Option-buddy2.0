@@ -244,6 +244,30 @@
     update(false); refreshAllGreeks();
   });
 
+  // ---------- fundamentals (Yahoo Finance, via yahoo-proxy/) ----------
+  $('fundGo').addEventListener('click', async () => {
+    const tk = (state.ticker || '').trim();
+    if (!tk) { $('fundOut').textContent = 'Enter a ticker first.'; return; }
+    $('fundGo').disabled = true; $('fundOut').textContent = 'Loading…'; $('fundStats').hidden = true;
+    const r = await SB.fetchFundamentals(tk);
+    $('fundGo').disabled = false;
+    if (r.error) { $('fundOut').textContent = r.error; return; }
+    const d = r.data;
+    const price = d.price || {}, sd = d.summaryDetail || {}, ap = d.assetProfile || {};
+    const f = (field) => (field && field.fmt) || '—';
+    const cards = [
+      { k: 'Company', v: price.longName || tk, s: [ap.sector, ap.industry].filter(Boolean).join(' · ') || '—' },
+      { k: 'Market cap', v: f(sd.marketCap), s: 'shares outstanding × price' },
+      { k: 'P/E (trailing / forward)', v: `${f(sd.trailingPE)} / ${f(sd.forwardPE)}`, s: 'price ÷ earnings per share' },
+      { k: '52-week range', v: `${f(sd.fiftyTwoWeekLow)} – ${f(sd.fiftyTwoWeekHigh)}`, s: 'low to high' },
+      { k: 'Dividend yield', v: f(sd.dividendYield), s: 'annualized' },
+      { k: 'Beta', v: f(sd.beta), s: 'volatility vs. the market' },
+    ];
+    $('fundStats').innerHTML = cards.map(c => `<div class="stat"><div class="k">${esc(c.k)}</div><div class="v mono">${esc(c.v)}</div><div class="s">${esc(c.s)}</div></div>`).join('');
+    $('fundStats').hidden = false;
+    $('fundOut').textContent = `Updated ${today()}.`;
+  });
+
   // ---------- IV solver ----------
   $('svGo').addEventListener('click', () => {
     const c = ctx(); const K = Number($('svK').value), P = Number($('svP').value), type = $('svT').value;
