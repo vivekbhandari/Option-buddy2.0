@@ -263,6 +263,11 @@
     const d = r.data;
     const price = d.price || {}, sd = d.summaryDetail || {}, ap = d.assetProfile || {};
     const f = (field) => (field && field.fmt) || '—';
+    const livePrice = price.regularMarketPrice && Number(price.regularMarketPrice.raw);
+    if (livePrice > 0 && !(Number(state.spot) > 0)) {
+      state.spot = livePrice; $('spot').value = livePrice;
+      update(false); refreshAllGreeks();
+    }
     const cards = [
       { k: 'Company', v: price.longName || tk, s: [ap.sector, ap.industry].filter(Boolean).join(' · ') || '—' },
       { k: 'Market cap', v: f(sd.marketCap), s: 'shares outstanding × price' },

@@ -41,14 +41,13 @@
 <div class="page-wrap">
   <header class="top">
     <div class="brand">
-      <h1>Spread Stack</h1>
       <p>Pick strategies from the library, stack them on one underlying, and see each spread and the combined book at expiry — with Greeks and coaching.</p>
     </div>
     <div class="trade-head">
       <div class="field"><label for="ticker">Ticker</label><input id="ticker" class="tick mono" value="PANW"></div>
-      <div class="field"><label for="spot">Spot (optional)</label><input id="spot" class="num mono" type="number" step="0.01" placeholder="—"></div>
+      <div class="field"><label for="spot">Spot</label><input id="spot" class="num mono" type="number" step="0.01" placeholder="auto"></div>
       <div class="field"><label for="mult">Multiplier</label><input id="mult" class="num mono" type="number" step="1" value="100"></div>
-      <button class="btn ghost" id="resetBtn" type="button">Reset this trade</button>
+      <button class="btn ghost small" id="resetBtn" type="button" title="Clear this trade back to a blank slate">Reset</button>
     </div>
   </header>
 
@@ -57,7 +56,7 @@
     <div class="lib-body">
       <div class="ctx" style="padding-bottom:0">
         <button class="btn small primary" id="fundGo" type="button">Load fundamentals for this ticker</button>
-        <span class="hint" style="flex-basis:auto" id="fundOut">Loads automatically when you tab away from the ticker field, or click here. Sector, market cap, P/E, 52-week range and a price chart, pulled from Yahoo Finance.</span>
+        <span class="hint" style="flex-basis:auto" id="fundOut">Loads automatically when you tab away from the ticker field — also fills in Spot with the live price. Sector, market cap, P/E, 52-week range and a price chart, pulled from Yahoo Finance.</span>
       </div>
       <div id="fundBody" style="margin:12px 14px 14px" hidden>
         <div class="stats" id="fundStats"></div>

@@ -20,6 +20,8 @@
   --good-fill: rgba(12,163,12,0.16);
   --bad-fill: rgba(208,59,59,0.16);
   --s1: #1f66bf; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4; --s6: #4a3aa7;
+  --shadow-sm: 0 1px 2px rgba(20,20,15,.05);
+  --shadow-md: 0 6px 20px rgba(20,20,15,.07);
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -34,6 +36,8 @@
     --bad: #d03b3b; --bad-text: #ee6a6a;
     --good-fill: rgba(12,163,12,0.22); --bad-fill: rgba(208,59,59,0.22);
     --s1: #68a5ec; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #9085e9;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,.4);
+    --shadow-md: 0 4px 16px rgba(0,0,0,.45);
   }
 }
 :root[data-theme="dark"] {
@@ -48,6 +52,8 @@
   --bad: #d03b3b; --bad-text: #ee6a6a;
   --good-fill: rgba(12,163,12,0.22); --bad-fill: rgba(208,59,59,0.22);
   --s1: #68a5ec; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #9085e9;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.4);
+  --shadow-md: 0 4px 16px rgba(0,0,0,.45);
 }
 
 * { box-sizing: border-box; }
@@ -75,10 +81,11 @@ button, input, select { font: inherit; color: inherit; }
 .ob-navbar .navbar-toggler { border-color: var(--ring); }
 
 .page-wrap { max-width: 1240px; margin: 0 auto; padding: 24px 16px 48px; display: flex; flex-direction: column; gap: 16px; }
+.page-wrap.reading { max-width: 780px; }
 
 header.top { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px 24px; }
 .brand h1 { font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
-.brand p { margin: 2px 0 0; color: var(--ink-2); max-width: 60ch; }
+.brand p { margin: 0; color: var(--ink-2); max-width: 60ch; font-size: 15px; }
 .trade-head { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: end; }
 .field { display: flex; flex-direction: column; gap: 4px; }
 .field label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
@@ -97,12 +104,22 @@ header.top { display: flex; flex-wrap: wrap; align-items: end; justify-content: 
 .tab.active { background: var(--ink); color: var(--bg); border-color: var(--ink); }
 .tab.active .n { color: var(--bg); opacity: 0.7; }
 .tabs-actions { display: flex; gap: 6px; flex: none; }
+@media (max-width: 560px) {
+  .tabs-actions { flex-basis: 100%; justify-content: flex-end; margin-top: 4px; }
+}
 .grid { display: grid; grid-template-columns: minmax(300px, 380px) 1fr; gap: 16px; align-items: start; }
 @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
 
-.panel { background: var(--surface); border: 1px solid var(--ring); border-radius: 10px; }
+.panel { background: var(--surface); border: 1px solid var(--ring); border-radius: 12px; box-shadow: var(--shadow-sm); }
 .panel-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 14px; border-bottom: 1px solid var(--hair); }
 .panel-h h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-2); font-weight: 600; }
+
+/* Secondary/optional tools (fundamentals, guided picker, strategy library) sit visually
+   quieter than the core trade workflow below them — flatter, no shadow, tighter padding —
+   so the page reads as "here's your trade" first and "here are some helpers" second. */
+.panel-tool { background: transparent; border: 1px solid var(--hair); border-radius: 10px; box-shadow: none; }
+.panel-tool > .lib-h { padding: 10px 14px; }
+.panel-tool .lib-h h2 { font-size: 12px; }
 
 .btn { border: 1px solid var(--ring); background: var(--surface-2); border-radius: 6px; padding: 6px 10px; font-weight: 500; cursor: pointer; }
 .btn:hover { border-color: var(--muted); }
@@ -135,12 +152,14 @@ header.top { display: flex; flex-wrap: wrap; align-items: end; justify-content: 
 .toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-2); user-select: none; }
 
 .right { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
-.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1px; background: var(--hair); border: 1px solid var(--ring); border-radius: 10px; overflow: hidden; }
-.stat { background: var(--surface); padding: 10px 12px; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1px; background: var(--hair); border: 1px solid var(--ring); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow-sm); }
+.stat { background: var(--surface); padding: 12px 14px; border-left: 3px solid transparent; }
 .stat .k { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
-.stat .v { font-size: 20px; font-weight: 500; margin-top: 2px; }
-.stat .s { font-size: 12px; color: var(--ink-2); }
+.stat .v { font-size: 22px; font-weight: 600; margin-top: 3px; letter-spacing: -0.01em; }
+.stat .s { font-size: 12px; color: var(--ink-2); margin-top: 1px; }
 .v.pos-v { color: var(--good-text); } .v.neg-v { color: var(--bad-text); }
+.stat:has(.v.pos-v) { border-left-color: var(--good); }
+.stat:has(.v.neg-v) { border-left-color: var(--bad); }
 
 .chart-panel .panel-h { flex-wrap: wrap; }
 .chart-controls { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
@@ -184,8 +203,9 @@ details[open] .lib-h .tw::before { content: "Hide "; } details:not([open]) .lib-
 .chip { border: 1px solid var(--ring); background: transparent; border-radius: 999px; padding: 5px 11px; font-size: 13px; color: var(--ink-2); cursor: pointer; }
 .chip.active { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
 .strats { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; padding: 12px 14px 14px; }
-.strat { border: 1px solid var(--ring); border-radius: 8px; padding: 10px 12px; text-align: left; background: var(--surface); display: flex; flex-direction: column; gap: 4px; cursor: pointer; }
-.strat:hover { border-color: var(--accent); }
+.strat { border: 1px solid var(--ring); border-radius: 8px; padding: 10px 12px; text-align: left; background: var(--surface); display: flex; flex-direction: column; gap: 4px; cursor: pointer; transition: border-color .15s, box-shadow .15s, transform .15s; }
+.strat:hover { border-color: var(--accent); box-shadow: var(--shadow-md); transform: translateY(-1px); }
+@media (prefers-reduced-motion: reduce) { .strat { transition: none; } .strat:hover { transform: none; } }
 .strat .nm { font-weight: 600; display: flex; justify-content: space-between; gap: 6px; align-items: baseline; }
 .strat .ol { font-size: 12px; color: var(--ink-2); }
 .strat .rk { font-size: 11px; color: var(--muted); }
@@ -241,6 +261,7 @@ table.tbl th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06e
 .foot { font-size: 12px; color: var(--muted); max-width: 70ch; }
 
 /* Learn page — Bootstrap accordion themed to match */
+.accordion { box-shadow: var(--shadow-sm); border-radius: 12px; overflow: hidden; }
 .accordion-item { background: var(--surface); border-color: var(--ring); }
 .accordion-button { background: var(--surface); color: var(--ink); font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; }
 .accordion-button:not(.collapsed) { background: var(--surface-2); color: var(--ink); box-shadow: none; }
