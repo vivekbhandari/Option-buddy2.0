@@ -185,6 +185,19 @@ window.SB = (function () {
   }
   function allPositions(store) { const out = []; store.trades.forEach(t => t.positions.forEach(p => out.push({ t, p }))); return out; }
 
+  // Reconciles this browser's local trades with the ones synced from the cloud —
+  // per id, whichever copy has the newer updatedAt wins; a trade that exists in
+  // only one place is kept as-is.
+  function mergeTrades(localTrades, cloudTrades) {
+    const byId = new Map();
+    (localTrades || []).forEach(t => byId.set(t.id, t));
+    (cloudTrades || []).forEach(ct => {
+      const lt = byId.get(ct.id);
+      if (!lt || (Number(ct.updatedAt) || 0) > (Number(lt.updatedAt) || 0)) byId.set(ct.id, ct);
+    });
+    return Array.from(byId.values());
+  }
+
   // ---------- book-level payoff engine ----------
   // Finds every zero-crossing of fn between lo and hi via linear interpolation on a fine grid.
   function breakevens(fn, lo, hi) {
@@ -309,7 +322,7 @@ window.SB = (function () {
     CATS, STRATS, INTENTS, stratById, L,
     STORE_KEY, mintId, blankTrade, example, migrateTrade, loadStore, persistStore,
     esc, fmtUSD, fmtPx, fmtK, ticks, today, EXIT_REASONS, daysBetween,
-    legPayoff, posPayoffFor, posTheoFor, posMaxProfitFor, posMaxLossFor, realized, posLabel, allPositions,
+    legPayoff, posPayoffFor, posTheoFor, posMaxProfitFor, posMaxLossFor, realized, posLabel, allPositions, mergeTrades,
     breakevens, slope, computeBook,
     csvText, downloadCSV,
     fetchFundamentals, fetchPriceHistory, peGuide,

@@ -77,3 +77,35 @@ test('allPositions(): flattens positions across every trade, keeping a reference
   assert.equal(flat[0].t.ticker, 'A');
   assert.equal(flat[2].t.ticker, 'B');
 });
+
+test('mergeTrades(): a trade only present locally or only in the cloud is kept as-is', () => {
+  const { SB } = loadSB();
+  const local = [{ id: 'a', ticker: 'AAPL', updatedAt: 100 }];
+  const cloud = [{ id: 'b', ticker: 'MSFT', updatedAt: 200 }];
+  const merged = SB.mergeTrades(local, cloud);
+  assert.equal(merged.length, 2);
+  assert.ok(merged.some(t => t.id === 'a' && t.ticker === 'AAPL'));
+  assert.ok(merged.some(t => t.id === 'b' && t.ticker === 'MSFT'));
+});
+
+test('mergeTrades(): same id on both sides -> the newer updatedAt wins, whichever side it is', () => {
+  const { SB } = loadSB();
+  const newerLocal = SB.mergeTrades(
+    [{ id: 'x', note: 'local-newer', updatedAt: 200 }],
+    [{ id: 'x', note: 'cloud-older', updatedAt: 100 }]
+  );
+  assert.equal(newerLocal[0].note, 'local-newer');
+
+  const newerCloud = SB.mergeTrades(
+    [{ id: 'x', note: 'local-older', updatedAt: 100 }],
+    [{ id: 'x', note: 'cloud-newer', updatedAt: 200 }]
+  );
+  assert.equal(newerCloud[0].note, 'cloud-newer');
+});
+
+test('mergeTrades(): handles empty/missing inputs without throwing', () => {
+  const { SB } = loadSB();
+  assert.deepEqual(SB.mergeTrades([], []), []);
+  assert.deepEqual(SB.mergeTrades(undefined, undefined), []);
+  assert.equal(SB.mergeTrades([{ id: 'a', updatedAt: 1 }], undefined).length, 1);
+});

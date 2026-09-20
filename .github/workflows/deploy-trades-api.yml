@@ -1,0 +1,23 @@
+name: Deploy trades API (Cloudflare Worker + D1)
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "trades-api/**"
+      - ".github/workflows/deploy-trades-api.yml"
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Deploy to Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: "trades-api"
+          command: deploy

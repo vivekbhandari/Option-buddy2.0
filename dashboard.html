@@ -34,6 +34,11 @@
       </ul>
       <button class="btn btn-sm ghost btn small" id="themeToggle" type="button" title="Cycle theme">🖥 Auto</button>
       <button class="btn btn-sm ghost btn small ms-2" id="exportBtn" type="button">Export CSV</button>
+      <button class="btn btn-sm primary btn small ms-2" id="authSignIn" type="button" hidden>Sign in with Google</button>
+      <span class="auth-chip ms-2" id="authChip" hidden>
+        <span class="mono" id="authEmail"></span>
+        <button class="btn small ghost" id="authSignOut" type="button">Sign out</button>
+      </span>
     </div>
   </div>
 </nav>
@@ -48,12 +53,14 @@
 
   <section class="dash" id="dashView"></section>
 
-  <p class="foot">Figures come only from trades you've marked opened and closed on the Trade Builder page. Nothing here is sent anywhere — it's read straight out of this browser's local storage.</p>
+  <p class="foot">Figures come only from trades you've marked opened and closed on the Trade Builder page. Signed out, everything stays in this browser's local storage; signed in, your trades also sync to your own account.</p>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="js/theme.js"></script>
 <script src="js/shared.js"></script>
+<script src="js/auth.js"></script>
 <script src="js/dashboard-page.js"></script>
 </body>
 </html>

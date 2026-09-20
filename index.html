@@ -34,6 +34,11 @@
       </ul>
       <button class="btn btn-sm ghost btn small" id="themeToggle" type="button" title="Cycle theme">🖥 Auto</button>
       <button class="btn btn-sm ghost btn small ms-2" id="exportBtn" type="button">Export CSV</button>
+      <button class="btn btn-sm primary btn small ms-2" id="authSignIn" type="button" hidden>Sign in with Google</button>
+      <span class="auth-chip ms-2" id="authChip" hidden>
+        <span class="mono" id="authEmail"></span>
+        <button class="btn small ghost" id="authSignOut" type="button">Sign out</button>
+      </span>
     </div>
   </div>
 </nav>
@@ -51,7 +56,7 @@
     </div>
   </header>
 
-  <details class="panel" id="fundPanel">
+  <details class="panel panel-tool" id="fundPanel">
     <summary class="lib-h"><h2>Fundamentals</h2><span class="tw">Yahoo Finance</span></summary>
     <div class="lib-body">
       <div class="ctx" style="padding-bottom:0">
@@ -89,7 +94,7 @@
     </div>
   </section>
 
-  <details class="panel" id="wizardPanel">
+  <details class="panel panel-tool" id="wizardPanel">
     <summary class="lib-h"><h2>Guided strategy picker</h2><span class="tw">wizard</span></summary>
     <div class="lib-body">
       <div class="wz-row">
@@ -107,7 +112,7 @@
     </div>
   </details>
 
-  <details class="panel" id="libPanel" open>
+  <details class="panel panel-tool" id="libPanel" open>
     <summary class="lib-h"><h2>Strategy library</h2><span class="tw">strategies</span></summary>
     <div class="lib-body">
       <div class="intents" id="intents"></div>
@@ -169,8 +174,10 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="js/theme.js"></script>
 <script src="js/shared.js"></script>
+<script src="js/auth.js"></script>
 <script src="js/trade-page.js"></script>
 </body>
 </html>

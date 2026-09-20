@@ -13,7 +13,13 @@
   let store = SB.loadStore();
   let state = store.trades[store.active];
 
-  function save() { SB.persistStore(store); }
+  function save() { SB.persistStore(store); scheduleCloudPush(); }
+  let cloudPushTimer = null;
+  function scheduleCloudPush() {
+    if (!(window.SBAuth && SBAuth.syncConfigured() && SBAuth.getUser())) return;
+    clearTimeout(cloudPushTimer);
+    cloudPushTimer = setTimeout(() => { SBAuth.saveTradeToCloud(state); }, 1200);
+  }
 
   function ctx() { return { S: Number(state.spot) || 0, iv: (Number(state.iv) || 0) / 100, T: Math.max(Number(state.dte) || 0, 0) / 365, ivr: Math.max(0, Math.min(100, Number(state.ivr) || 0)), r: (Number(state.rate) || 4) / 100, mult: Number(state.mult) || 100 }; }
   function legGreeks(leg, c) {
@@ -605,6 +611,30 @@
     renderScenario();
   }
 
+  // ---------- account (Google sign-in, cloud sync via trades-api) ----------
+  function renderAuthUI(user) {
+    const configured = window.SBAuth && SBAuth.configured();
+    $('authSignIn').hidden = !configured || !!user;
+    $('authChip').hidden = !configured || !user;
+    if (user) $('authEmail').textContent = user.email || '';
+  }
+  async function syncFromCloud() {
+    if (!(window.SBAuth && SBAuth.syncConfigured())) return;
+    const r = await SBAuth.fetchCloudTrades();
+    if (r.error || !r.data || !Array.isArray(r.data.trades) || !r.data.trades.length) return;
+    const activeId = state.id;
+    store.trades = SB.mergeTrades(store.trades, r.data.trades);
+    const idx = store.trades.findIndex(t => t.id === activeId);
+    store.active = idx >= 0 ? idx : 0;
+    state = store.trades[store.active];
+    save(); loadHeader(); update();
+  }
+  if (window.SBAuth) {
+    SBAuth.onChange(user => { renderAuthUI(user); if (user) syncFromCloud(); });
+    $('authSignIn').addEventListener('click', () => SBAuth.signInWithGoogle());
+    $('authSignOut').addEventListener('click', () => SBAuth.signOut());
+  }
+
   // header controls
   loadHeader();
   $('newTrade').addEventListener('click', () => {
@@ -617,6 +647,8 @@
   });
   $('delTrade').addEventListener('click', () => {
     if (store.trades.length <= 1) return;
+    const removedId = store.trades[store.active].id;
+    if (window.SBAuth && SBAuth.syncConfigured() && SBAuth.getUser()) SBAuth.deleteTradeFromCloud(removedId);
     store.trades.splice(store.active, 1); store.active = Math.max(0, store.active - 1); state = store.trades[store.active];
     loadHeader(); update();
   });

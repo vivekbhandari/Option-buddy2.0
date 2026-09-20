@@ -1,0 +1,7 @@
+{
+  "name": "spread-stack-trades-api",
+  "private": true,
+  "dependencies": {
+    "jose": "^5.9.6"
+  }
+}

@@ -71,4 +71,25 @@
   }
 
   renderDashboard();
+
+  // ---------- account (Google sign-in, cloud sync via trades-api) ----------
+  function renderAuthUI(user) {
+    const configured = window.SBAuth && SBAuth.configured();
+    $('authSignIn').hidden = !configured || !!user;
+    $('authChip').hidden = !configured || !user;
+    if (user) $('authEmail').textContent = user.email || '';
+  }
+  async function syncFromCloud() {
+    if (!(window.SBAuth && SBAuth.syncConfigured())) return;
+    const r = await SBAuth.fetchCloudTrades();
+    if (r.error || !r.data || !Array.isArray(r.data.trades) || !r.data.trades.length) return;
+    store.trades = SB.mergeTrades(store.trades, r.data.trades);
+    SB.persistStore(store);
+    renderDashboard();
+  }
+  if (window.SBAuth) {
+    SBAuth.onChange(user => { renderAuthUI(user); if (user) syncFromCloud(); });
+    $('authSignIn').addEventListener('click', () => SBAuth.signInWithGoogle());
+    $('authSignOut').addEventListener('click', () => SBAuth.signOut());
+  }
 })();
