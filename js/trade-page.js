@@ -256,7 +256,8 @@
       <text x="${W - pad}" y="16" text-anchor="end" font-size="11" fill="${color}" font-family="IBM Plex Mono, monospace">${esc(fmtPx(last))} (${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%)</text>
     `;
   }
-  function renderQuoteBanner(tk, price, livePrice) {
+  const MARKET_STATE_LABEL = { REGULAR: 'Market open', PRE: 'Pre-market', POST: 'After hours', CLOSED: 'Market closed' };
+  function renderQuoteBanner(tk, price, livePrice, sd) {
     if (!(livePrice > 0)) { $('quoteBanner').hidden = true; return; }
     const chg = Number(price.regularMarketChange && price.regularMarketChange.raw);
     const chgPct = Number(price.regularMarketChangePercent && price.regularMarketChangePercent.raw) * 100;
@@ -273,6 +274,26 @@
       qbChange.textContent = '';
       qbChange.className = 'qb-change mono';
     }
+
+    const bits = [];
+    const dayLo = price.regularMarketDayLow && Number(price.regularMarketDayLow.raw);
+    const dayHi = price.regularMarketDayHigh && Number(price.regularMarketDayHigh.raw);
+    if (dayLo > 0 && dayHi > 0) bits.push(`Day ${fmtPx(dayLo)}–${fmtPx(dayHi)}`);
+
+    const vol = price.regularMarketVolume && price.regularMarketVolume.fmt;
+    const avgVol = sd && sd.averageVolume && sd.averageVolume.fmt;
+    if (vol) bits.push(`Vol ${vol}${avgVol ? ' (avg ' + avgVol + ')' : ''}`);
+
+    const mcap = sd && sd.marketCap && sd.marketCap.fmt;
+    if (mcap) bits.push(`Mkt cap ${mcap}`);
+
+    const stateRaw = price.marketState && (typeof price.marketState === 'string' ? price.marketState : price.marketState.raw);
+    const stateLabel = MARKET_STATE_LABEL[stateRaw];
+    const t = price.regularMarketTime && Number(price.regularMarketTime.raw);
+    const asOf = t > 0 ? new Date(t * 1000).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : '';
+    if (stateLabel || asOf) bits.push([stateLabel, asOf ? 'as of ' + asOf : ''].filter(Boolean).join(' · '));
+
+    $('qbExtra').textContent = bits.join('  ·  ');
     $('quoteBanner').hidden = false;
   }
   let lastFundTicker = '';
@@ -293,7 +314,7 @@
       state.spot = livePrice; $('spot').value = livePrice;
       update(false); refreshAllGreeks();
     }
-    renderQuoteBanner(tk, price, livePrice);
+    renderQuoteBanner(tk, price, livePrice, sd);
     const cards = [
       { k: 'Company', v: price.longName || tk, s: [ap.sector, ap.industry].filter(Boolean).join(' · ') || '—' },
       { k: 'Market cap', v: f(sd.marketCap), s: 'shares outstanding × price' },
