@@ -85,6 +85,18 @@ button, input, select { font: inherit; color: inherit; }
 .page-wrap { max-width: 1240px; margin: 0 auto; padding: 24px 16px 48px; display: flex; flex-direction: column; gap: 16px; }
 .page-wrap.reading { max-width: 780px; }
 
+.quote-banner {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px;
+  background: var(--surface-2); border: 1px solid var(--hair); border-radius: 10px;
+  padding: 10px 14px;
+}
+.quote-banner .qb-ticker { font-weight: 600; font-size: 15px; }
+.quote-banner .qb-name { color: var(--ink-2); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1 1 auto; min-width: 0; }
+.quote-banner .qb-price { font-weight: 600; font-size: 15px; }
+.quote-banner .qb-change { font-size: 13px; }
+.quote-banner .qb-change.pos-v { color: var(--good-text); }
+.quote-banner .qb-change.neg-v { color: var(--bad-text); }
+
 header.top { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px 24px; }
 .brand h1 { font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
 .brand p { margin: 0; color: var(--ink-2); max-width: 60ch; font-size: 15px; }

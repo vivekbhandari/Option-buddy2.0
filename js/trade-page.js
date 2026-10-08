@@ -256,6 +256,25 @@
       <text x="${W - pad}" y="16" text-anchor="end" font-size="11" fill="${color}" font-family="IBM Plex Mono, monospace">${esc(fmtPx(last))} (${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%)</text>
     `;
   }
+  function renderQuoteBanner(tk, price, livePrice) {
+    if (!(livePrice > 0)) { $('quoteBanner').hidden = true; return; }
+    const chg = Number(price.regularMarketChange && price.regularMarketChange.raw);
+    const chgPct = Number(price.regularMarketChangePercent && price.regularMarketChangePercent.raw) * 100;
+    $('qbTicker').textContent = tk.toUpperCase();
+    $('qbName').textContent = price.longName || price.shortName || '';
+    $('qbPrice').textContent = '$' + fmtPx(livePrice);
+    const qbChange = $('qbChange');
+    if (Number.isFinite(chg) && Number.isFinite(chgPct)) {
+      const up = chg >= 0;
+      const sign = up ? '+' : '−';
+      qbChange.textContent = `${sign}${fmtPx(Math.abs(chg))} (${sign}${Math.abs(chgPct).toFixed(2)}%)`;
+      qbChange.className = 'qb-change mono ' + (up ? 'pos-v' : 'neg-v');
+    } else {
+      qbChange.textContent = '';
+      qbChange.className = 'qb-change mono';
+    }
+    $('quoteBanner').hidden = false;
+  }
   let lastFundTicker = '';
   async function loadFundamentals() {
     const tk = (state.ticker || '').trim();
@@ -265,7 +284,7 @@
     const [r, h] = await Promise.all([SB.fetchFundamentals(tk), SB.fetchPriceHistory(tk, '3mo', '1d')]);
     $('fundGo').disabled = false;
     if (tk !== state.ticker.trim()) return; // ticker changed again while this was in flight
-    if (r.error) { $('fundOut').textContent = r.error; $('fundBody').hidden = true; return; }
+    if (r.error) { $('fundOut').textContent = r.error; $('fundBody').hidden = true; $('quoteBanner').hidden = true; return; }
     const d = r.data;
     const price = d.price || {}, sd = d.summaryDetail || {}, ap = d.assetProfile || {};
     const f = (field) => (field && field.fmt) || '—';
@@ -274,6 +293,7 @@
       state.spot = livePrice; $('spot').value = livePrice;
       update(false); refreshAllGreeks();
     }
+    renderQuoteBanner(tk, price, livePrice);
     const cards = [
       { k: 'Company', v: price.longName || tk, s: [ap.sector, ap.industry].filter(Boolean).join(' · ') || '—' },
       { k: 'Market cap', v: f(sd.marketCap), s: 'shares outstanding × price' },
