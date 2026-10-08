@@ -256,7 +256,10 @@
       <text x="${W - pad}" y="16" text-anchor="end" font-size="11" fill="${color}" font-family="IBM Plex Mono, monospace">${esc(fmtPx(last))} (${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%)</text>
     `;
   }
-  const MARKET_STATE_LABEL = { REGULAR: 'Market open', PRE: 'Pre-market', POST: 'After hours', CLOSED: 'Market closed' };
+  const MARKET_STATE_LABEL = {
+    REGULAR: 'Market open', PRE: 'Pre-market', PREPRE: 'Pre-market',
+    POST: 'After hours', POSTPOST: 'After hours', CLOSED: 'Market closed',
+  };
   function renderQuoteBanner(tk, price, livePrice, sd) {
     if (!(livePrice > 0)) { $('quoteBanner').hidden = true; return; }
     const chg = Number(price.regularMarketChange && price.regularMarketChange.raw);
@@ -289,7 +292,7 @@
 
     const stateRaw = price.marketState && (typeof price.marketState === 'string' ? price.marketState : price.marketState.raw);
     const stateLabel = MARKET_STATE_LABEL[stateRaw];
-    const t = price.regularMarketTime && Number(price.regularMarketTime.raw);
+    const t = typeof price.regularMarketTime === 'number' ? price.regularMarketTime : Number(price.regularMarketTime && price.regularMarketTime.raw);
     const asOf = t > 0 ? new Date(t * 1000).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : '';
     if (stateLabel || asOf) bits.push([stateLabel, asOf ? 'as of ' + asOf : ''].filter(Boolean).join(' · '));
 
